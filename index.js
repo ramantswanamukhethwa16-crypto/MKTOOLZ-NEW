@@ -5,39 +5,58 @@ const qrcode = require('qrcode-terminal');
 const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
 
-const API_ID = 37250890;
-const API_HASH = 'dd2b4ccdec54ac3b4dd363ecac493304';
+// Express Server Setup for Cloud Hosting Health Checks & Port Binding
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.status(200).send('🤖 MKTOOLZ-WD WhatsApp & Telegram Bot is Running Live!');
+});
+
+app.listen(PORT, () => {
+    console.log(`🌐 Server is listening on port ${PORT}`);
+});
+
+const API_ID = parseInt(process.env.TG_API_ID || '37250890', 10);
+const API_HASH = process.env.TG_API_HASH || 'dd2b4ccdec54ac3b4dd363ecac493304';
 const TARGET_BOT = 'ScriptoolzDecrypt_bot';
 const SESSION_FILE = path.join(__dirname, 'telegram_session.txt');
 const DB_FILE = path.join(__dirname, 'bot_database.json');
 const WHATSAPP_CHANNEL_LINK = 'https://whatsapp.com/channel/0029Vb9IKw17T8bZRw09iR2n';
 
-// Your active HilltopAds DirectLink configuration
+// Active HilltopAds DirectLink configuration
 const HILLTOP_DIRECT_LINK = 'https://plump-plastic.com/gz19tk';
-const HILLTOP_API_KEY = '1H1nfnApO9MEcy4Sxp3kEcPDw4NERRHxI8AsV5ZikCqYtLV8vWi3oFczftEudOGX';
+const HILLTOP_API_KEY = process.env.HILLTOP_API_KEY || '1H1nfnApO9MEcy4Sxp3kEcPDw4NERRHxI8AsV5ZikCqYtLV8vWi3oFczftEudOGX';
 
-// Termux storage path for logo image mapped via termux-setup-storage
+// Termux / Cloud storage path fallback
 const LOGO_PATH = path.join(process.env.HOME || '/data/data/com.termux/files/home', 'storage', 'dcim', 'Screenshots', 'logo.jpg');
 
 // Database initialization with persistent pairedNumbers registry
 let db = {
-    users: {}, // { senderNumber: { name, number, queriesCount, lastActive, banned } }
-    history: [], // [{ number, name, input, timestamp }]
-    pairedNumbers: [], // Persistent registry of authorized paired numbers (digits only)
-    adminPassword: '0734548144',
-    adEarnings: 0.00 // Fallback local tracker
+    users: {}, 
+    history: [], 
+    pairedNumbers: [], 
+    adminPassword: process.env.ADMIN_PASSWORD || '0734548144',
+    adEarnings: 0.00 
 };
 
 if (fs.existsSync(DB_FILE)) {
     try {
         const loadedDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
         db = { ...db, ...loadedDb };
-    } catch (e) {}
+    } catch (e) {
+        console.log('⚠️ Warning: Failed to parse bot_database.json, initializing fresh state.');
+    }
 }
 
 function saveDb() {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+    } catch (e) {
+        console.log('⚠️ Error saving database:', e.message);
+    }
 }
 
 function normalizeNumber(num) {
@@ -45,7 +64,6 @@ function normalizeNumber(num) {
     return num.toString().replace(/[^0-9]/g, '');
 }
 
-// Function to fetch live balance from HilltopAds API
 async function fetchLiveHilltopBalance() {
     try {
         const response = await fetch(`https://api.hilltopads.com/publisher/balance?key=${HILLTOP_API_KEY}`);
@@ -133,8 +151,8 @@ async function startPrimaryBot() {
     global.tgClient = new TelegramClient(stringSession, API_ID, API_HASH, { connectionRetries: 5 });
     
     await global.tgClient.start({
-        phoneNumber: async () => await askQuestion('Please enter your phone number: '),
-        password: async () => await askQuestion('Please enter your 2FA password (if any): '),
+        phoneNumber: async () => process.env.TG_PHONE || await askQuestion('Please enter your phone number: '),
+        password: async () => process.env.TG_PASSWORD || await askQuestion('Please enter your 2FA password (if any): '),
         phoneCode: async () => await askQuestion('Please enter the code you received: '),
         onError: (err) => {},
     });
@@ -147,6 +165,10 @@ async function startPrimaryBot() {
 
 async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, isPrimary = false) {
     const sessionDir = path.join(__dirname, `auth_${sessionName}`);
+    if (!fs.existsSync(sessionDir)) {
+        fs.mkdirSync(sessionDir, { recursive: true });
+    }
+    
     const credsPath = path.join(sessionDir, 'creds.json');
     const isFirstRun = !fs.existsSync(credsPath);
 
@@ -176,10 +198,10 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
     sock.ev.on('creds.update', saveCreds);
 
     if (isFirstRun && isPrimary) {
-        const usePairingCode = (await askQuestion('Do you want to use an 8-digit pairing code instead of QR code? (y/n): ')).trim().toLowerCase();
+        const usePairingCode = process.env.USE_PAIRING_CODE || (await askQuestion('Do you want to use an 8-digit pairing code instead of QR code? (y/n): ')).trim().toLowerCase();
         
-        if (usePairingCode === 'y') {
-            const phoneNumber = await askQuestion('Enter your WhatsApp phone number (e.g. 27XXXXXXXXX): ');
+        if (usePairingCode === 'y' || usePairingCode === 'true') {
+            const phoneNumber = process.env.WHATSAPP_NUMBER || await askQuestion('Enter your WhatsApp phone number (e.g. 27XXXXXXXXX): ');
             const cleanedNum = normalizeNumber(phoneNumber);
             sessionData.pairedNumber = cleanedNum;
             if (!db.pairedNumbers.includes(cleanedNum)) {
@@ -210,7 +232,7 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
             if (shouldReconnect) {
-                createOrLoadWhatsAppSession(sessionName, pairingNumber, isPrimary);
+                setTimeout(() => createOrLoadWhatsAppSession(sessionName, pairingNumber, isPrimary), 5000);
             }
         } else if (connection === 'open') {
             if (sock.user && sock.user.id) {
@@ -288,7 +310,6 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
             const messageContent = msg.message[messageType];
             const caption = messageContent.caption ? messageContent.caption.trim() : '';
 
-            // Flexible caption check allowing exact "/" or text starting with "/"
             if (caption !== '/' && !caption.startsWith('/')) {
                 return;
             }
@@ -303,7 +324,6 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
                 saveDb();
             }
 
-            // Immediately react with loading symbol
             await sock.sendMessage(remoteJid, { react: { text: '🔄', key: msg.key } });
             
             let tempFilePath = null;
@@ -375,8 +395,10 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
                 if (!finalMsg) {
                     await sock.sendMessage(remoteJid, { react: { text: '❌', key: msg.key } });
                     await sock.sendMessage(remoteJid, { text: wrapMessage(`❌ @${senderName} decryption timed out. Please try again.`, sessionData) });
-                    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
-                    try { await sock.sendMessage(remoteJid, { delete: statusMsg.key }); } catch (e) {}
+                    if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+                    if (statusMsg) {
+                        try { await sock.sendMessage(remoteJid, { delete: statusMsg.key }); } catch (e) {}
+                    }
                     return;
                 }
 
@@ -614,10 +636,17 @@ Send me a supported config file with \`/\` as the caption to decrypt it.
                 await sock.sendMessage(remoteJid, { text: wrapMessage(body, sessionData) });
             }
         }
-        else {
-            return;
-        }
     });
 }
 
+// Global Exception Handlers to keep hosting process alive
+process.on('uncaughtException', (err) => {
+    console.error('⚠️ Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('⚠️ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 startPrimaryBot();
+
