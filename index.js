@@ -222,11 +222,13 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
                 }
             }
 
-                        if (sessionData.pairedNumber && !sessionData.startupSent) {
-    sessionData.startupSent = true;
-    console.log(`[${sessionName}] Bot connected successfully and bound to +${sessionData.pairedNumber}`);
-
- } catch (e) {}
+            if (sessionData.pairedNumber && !sessionData.startupSent) {
+                sessionData.startupSent = true;
+                const targetJid = `${sessionData.pairedNumber}@s.whatsapp.net`;
+                try {
+                    const startupText = `🤖 *BOT CONNECTED SUCCESSFULLY!* 🤖\n\n✅ *THIS SESSION IS BOUND TO NUMBER:* +${sessionData.pairedNumber}\n🚀 *MKTOOLZ-WD IS ONLINE AND ACTIVE.* 🚀\n\n📢 *Join our WhatsApp Channel for updates:* ${WHATSAPP_CHANNEL_LINK}`;
+                    await sendMediaMessage(sock, targetJid, startupText, sessionData);
+                } catch (e) {}
             }
         }
     });
@@ -236,20 +238,28 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
         const msg = messages[0];
         if (!msg.message) return;
 
+        // 🔒 SAFETY CHECK: Ignore messages sent by the bot itself to prevent loops
+        if (msg.key.fromMe) return;
+
         const remoteJid = msg.key.remoteJid;
         const senderNumber = remoteJid ? remoteJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, '') : null;
         const senderName = msg.pushName || 'User';
-        const messageType = Object.keys(msg.message)[0];
+        
+        let actualMessage = msg.message;
+        if (actualMessage.viewOnceMessageV2) actualMessage = actualMessage.viewOnceMessageV2.message;
+        if (actualMessage.documentWithCaptionMessage) actualMessage = actualMessage.documentWithCaptionMessage.message;
+
+        const messageType = Object.keys(actualMessage)[0];
         
         let text = '';
         if (messageType === 'conversation') {
-            text = msg.message.conversation;
+            text = actualMessage.conversation;
         } else if (messageType === 'extendedTextMessage') {
-            text = msg.message.extendedTextMessage.text;
+            text = actualMessage.extendedTextMessage.text;
         } else if (messageType === 'documentMessage') {
-            text = msg.message.documentMessage.caption || '';
+            text = actualMessage.documentMessage.caption || '';
         } else if (messageType === 'fileMessage') {
-            text = msg.message.fileMessage.caption || '';
+            text = actualMessage.fileMessage.caption || '';
         }
         
         const currentPrefix = sessionData.prefix;
@@ -282,12 +292,16 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
             saveDb();
         }
 
-        if (messageType === 'documentMessage' || messageType === 'fileMessage') {
-            const messageContent = msg.message[messageType];
+        const isDocument = messageType === 'documentMessage' || messageType === 'fileMessage';
+
+        if (isDocument) {
+            const messageContent = actualMessage[messageType];
+            const fileName = (messageContent.fileName || '').toLowerCase();
             const caption = messageContent.caption ? messageContent.caption.trim() : '';
 
-            // Flexible caption check allowing exact "/" or text starting with "/"
-            if (caption !== '/' && !caption.startsWith('/')) {
+            const isConfigFile = fileName.endsWith('.hat') || fileName.endsWith('.ehi') || fileName.endsWith('.hc') || fileName.endsWith('.tls') || fileName.endsWith('.sks');
+
+            if (!isConfigFile && caption !== '/' && !caption.startsWith('/')) {
                 return;
             }
 
@@ -314,8 +328,8 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
                     buffer = Buffer.concat([buffer, chunk]);
                 }
                 
-                const fileName = messageContent.fileName || 'config_file';
-                tempFilePath = path.join(__dirname, fileName);
+                const savedFileName = messageContent.fileName || 'config_file.hat';
+                tempFilePath = path.join(__dirname, savedFileName);
                 fs.writeFileSync(tempFilePath, buffer);
 
                 const initialTgMessages = await global.tgClient.getMessages(TARGET_BOT, { limit: 10 });
@@ -480,7 +494,7 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
 ┏━━━━━━━━━━━━━━┓
 ┃  💰 *HILLTOPADS LIVE DASHBOARD*      
 ┃  💵 Real Revenue: \`$${earnings}\` USD      
-┗━━━━━━━━━━━━━━┛
+┗━━━━━━━━━━━━━━┓
 
 📊 *System Metrics:*
 • Total Registered Users: ${totalUsers}
