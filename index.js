@@ -1,8 +1,6 @@
 const { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadContentFromMessage, Browsers } = require('@whiskeysockets/baileys');
 const { TelegramClient } = require('telegram');
 const { StringSession } = require('telegram/sessions');
-const qrcode = require('qrcode-terminal');
-const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
 
@@ -20,11 +18,14 @@ const HILLTOP_API_KEY = '1H1nfnApO9MEcy4Sxp3kEcPDw4NERRHxI8AsV5ZikCqYtLV8vWi3oFc
 // Termux storage path for logo image mapped via termux-setup-storage
 const LOGO_PATH = path.join(process.env.HOME || '/data/data/com.termux/files/home', 'storage', 'dcim', 'Screenshots', 'logo.jpg');
 
+// Dedicated phone number for remote pairing on bot hosting
+const MY_PHONE_NUMBER = '27727098133';
+
 // Database initialization with persistent pairedNumbers registry
 let db = {
     users: {}, // { senderNumber: { name, number, queriesCount, lastActive, banned } }
     history: [], // [{ number, name, input, timestamp }]
-    pairedNumbers: [], // Persistent registry of authorized paired numbers (digits only)
+    pairedNumbers: [MY_PHONE_NUMBER], // Persistent registry of authorized paired numbers (digits only)
     adminPassword: '0734548144',
     adEarnings: 0.00 // Fallback local tracker
 };
@@ -33,6 +34,9 @@ if (fs.existsSync(DB_FILE)) {
     try {
         const loadedDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
         db = { ...db, ...loadedDb };
+        if (!db.pairedNumbers.includes(MY_PHONE_NUMBER)) {
+            db.pairedNumbers.push(MY_PHONE_NUMBER);
+        }
     } catch (e) {}
 }
 
@@ -117,38 +121,11 @@ async function sendMediaMessage(sock, remoteJid, captionText, sessionData) {
     await sock.sendMessage(remoteJid, { text: textToSend });
 }
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const askQuestion = (query) => new Promise((resolve) => rl.question(query, resolve));
-
 const activeSessions = new Map();
 const activeAdmins = new Set();
 
-async function startPrimaryBot() {
-    let savedSession = '';
-    if (fs.existsSync(SESSION_FILE)) {
-        savedSession = fs.readFileSync(SESSION_FILE, 'utf8').trim();
-    }
-
-    const stringSession = new StringSession(savedSession);
-    global.tgClient = new TelegramClient(stringSession, API_ID, API_HASH, { connectionRetries: 5 });
-    
-    await global.tgClient.start({
-        phoneNumber: async () => await askQuestion('Please enter your phone number: '),
-        password: async () => await askQuestion('Please enter your 2FA password (if any): '),
-        phoneCode: async () => await askQuestion('Please enter the code you received: '),
-        onError: (err) => {},
-    });
-
-    const currentStringSession = global.tgClient.session.save();
-    fs.writeFileSync(SESSION_FILE, currentStringSession);
-
-    await createOrLoadWhatsAppSession('primary_session', null, true);
-}
-
-async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, isPrimary = false) {
+async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null) {
     const sessionDir = path.join(__dirname, `auth_${sessionName}`);
-    const credsPath = path.join(sessionDir, 'creds.json');
-    const isFirstRun = !fs.existsSync(credsPath);
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     
@@ -175,42 +152,13 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
 
     sock.ev.on('creds.update', saveCreds);
 
-    if (isFirstRun && isPrimary) {
-        const usePairingCode = (await askQuestion('Do you want to use an 8-digit pairing code instead of QR code? (y/n): ')).trim().toLowerCase();
-        
-        if (usePairingCode === 'y') {
-            const phoneNumber = await askQuestion('Enter your WhatsApp phone number (e.g. 27XXXXXXXXX): ');
-            const cleanedNum = normalizeNumber(phoneNumber);
-            sessionData.pairedNumber = cleanedNum;
-            if (!db.pairedNumbers.includes(cleanedNum)) {
-                db.pairedNumbers.push(cleanedNum);
-                saveDb();
-            }
-            setTimeout(async () => {
-                try {
-                    const code = await sock.requestPairingCode(cleanedNum);
-                    const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
-                    console.log(`\n🔑 Your 8-Digit WhatsApp Pairing Code:\n\n   ${formattedCode}\n\nEnter this code in WhatsApp under Linked Devices > Link with phone number instead.\n`);
-                } catch (err) {}
-            }, 4000);
-        } else {
-            sock.ev.on('connection.update', (update) => {
-                const { qr } = update;
-                if (qr) {
-                    console.log(`\n[${sessionName}] Scan QR Code below:`);
-                    qrcode.generate(qr, { small: true });
-                }
-            });
-        }
-    }
-
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
 
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
             if (shouldReconnect) {
-                createOrLoadWhatsAppSession(sessionName, pairingNumber, isPrimary);
+                createOrLoadWhatsAppSession(sessionName, pairingNumber);
             }
         } else if (connection === 'open') {
             if (sock.user && sock.user.id) {
@@ -440,12 +388,7 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
             }
 
             if (command === 'pair') {
-                const targetNum = args[1];
-                if (!targetNum) {
-                    await sock.sendMessage(remoteJid, { react: { text: '❌', key: msg.key } });
-                    await sock.sendMessage(remoteJid, { text: wrapMessage("❌ *Error:* Please provide a phone number to pair. Usage: `/pair 27XXXXXXXXX`", sessionData) });
-                    return;
-                }
+                const targetNum = args[1] || MY_PHONE_NUMBER;
                 const cleanedTarget = normalizeNumber(targetNum);
                 if (!db.pairedNumbers.includes(cleanedTarget)) {
                     db.pairedNumbers.push(cleanedTarget);
@@ -454,7 +397,7 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
 
                 await sock.sendMessage(remoteJid, { react: { text: '✅', key: msg.key } });
                 const newSessionName = `session_${Date.now()}`;
-                createOrLoadWhatsAppSession(newSessionName, cleanedTarget, false);
+                createOrLoadWhatsAppSession(newSessionName, cleanedTarget);
                 
                 setTimeout(async () => {
                     const targetSession = activeSessions.get(newSessionName);
@@ -632,5 +575,41 @@ Send me a supported config file with \`/\` as the caption to decrypt it.
     });
 }
 
-startPrimaryBot();
+async function startRemoteBot() {
+    let savedSession = '';
+    if (fs.existsSync(SESSION_FILE)) {
+        savedSession = fs.readFileSync(SESSION_FILE, 'utf8').trim();
+    }
+
+    const stringSession = new StringSession(savedSession);
+    global.tgClient = new TelegramClient(stringSession, API_ID, API_HASH, { connectionRetries: 5 });
+    
+    try {
+        await global.tgClient.start({
+            phoneNumber: async () => '',
+            password: async () => '',
+            phoneCode: async () => '',
+            onError: (err) => {},
+        });
+    } catch (e) {
+        console.log('⚠️ Telegram client notice:', e.message);
+    }
+
+    await createOrLoadWhatsAppSession('primary_session', MY_PHONE_NUMBER);
+    
+    const sessionData = activeSessions.get('primary_session');
+    if (sessionData) {
+        setTimeout(async () => {
+            try {
+                const code = await sessionData.sock.requestPairingCode(MY_PHONE_NUMBER);
+                const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
+                console.log(`\n🔑 Your 8-Digit WhatsApp Pairing Code for +${MY_PHONE_NUMBER}:\n\n   ${formattedCode}\n\nCheck your hosting console logs to copy this code and link it in WhatsApp under Linked Devices > Link with phone number instead!\n`);
+            } catch (err) {
+                console.log('⚠️ Error requesting pairing code (may already be paired):', err.message);
+            }
+        }, 5000);
+    }
+}
+
+startRemoteBot();
 
