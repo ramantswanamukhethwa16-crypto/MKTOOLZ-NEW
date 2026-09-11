@@ -223,9 +223,9 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
             }
 
                         if (sessionData.pairedNumber && !sessionData.startupSent) {
-                sessionData.startupSent = true;
-                console.log(`[${sessionName}]✅️ Bot connected successfully and bound to +${sessionData.pairedNumber}✅️`);
-            }
+    sessionData.startupSent = true;
+    console.log(`[${sessionName}] Bot connected successfully and bound to +${sessionData.pairedNumber}`);
+
  } catch (e) {}
             }
         }
