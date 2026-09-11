@@ -13,6 +13,10 @@
     "sharp": "^0.35.4",
     "telegram": "^2.26.22"
   },
+  "overrides": {
+    "libsignal": "2.0.0",
+    "libsignal-node": "^2.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ramantswanamukhethwa16-crypto/MKTOOLZ-NEW.git"
