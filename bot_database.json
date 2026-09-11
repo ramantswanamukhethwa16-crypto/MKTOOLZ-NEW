@@ -112,7 +112,7 @@
       "name": "User",
       "number": "120363402073700629",
       "queriesCount": 0,
-      "lastActive": 1789134737317,
+      "lastActive": 1789136127481,
       "banned": false
     },
     "120363421454600041": {
@@ -133,7 +133,14 @@
       "name": "User",
       "number": "120363428253126538",
       "queriesCount": 0,
-      "lastActive": 1789134945461,
+      "lastActive": 1789135581793,
+      "banned": false
+    },
+    "120363408689892271": {
+      "name": "Selu",
+      "number": "120363408689892271",
+      "queriesCount": 0,
+      "lastActive": 1789135835865,
       "banned": false
     }
   },
