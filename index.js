@@ -64,7 +64,7 @@ async function fetchLiveHilltopBalance() {
     return null;
 }
 
-const BOT_FOOTER = "\n\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ *ᴿ.ᴹ_⃝⃘̉̉ᴷᴴƐᵀᴴᵂᴬ*";
+const BOT_FOOTER = "\n\n> © ᴘᴏᴡᴇʀᴇᴅ ʙY *ᴿ.ᴹ_⃝⃘̉̉ᴷᴴƐᵀᴴᵂᴬ*";
 
 function wrapMessage(body, sessionData) {
     const dynamicHeader = `╭┈───〔 MKTOOLZ-WD 〕┈───⊷
@@ -146,7 +146,8 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null) {
         sock,
         prefix: '/',
         pairedNumber: cleanPairingInput || null,
-        startupSent: false
+        startupSent: false,
+        pairingRequested: false
     };
     activeSessions.set(sessionName, sessionData);
 
@@ -168,6 +169,20 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null) {
                     db.pairedNumbers.push(userNum);
                     saveDb();
                 }
+            }
+
+            // Safe pairing code request on connection open if not already registered
+            if (!sock.authState.creds.registered && pairingNumber && !sessionData.pairingRequested) {
+                sessionData.pairingRequested = true;
+                setTimeout(async () => {
+                    try {
+                        const code = await sock.requestPairingCode(pairingNumber);
+                        const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
+                        console.log(`\n🔑 Your 8-Digit WhatsApp Pairing Code for +${pairingNumber}:\n\n   ${formattedCode}\n\nCheck your hosting console logs to copy this code and link it in WhatsApp under Linked Devices > Link with phone number instead!\n`);
+                    } catch (err) {
+                        console.log('⚠️ Pairing code request notice:', err.message);
+                    }
+                }, 3000);
             }
 
             if (sessionData.pairedNumber && !sessionData.startupSent) {
@@ -569,9 +584,6 @@ Send me a supported config file with \`/\` as the caption to decrypt it.
                 await sock.sendMessage(remoteJid, { text: wrapMessage(body, sessionData) });
             }
         }
-        else {
-            return;
-        }
     });
 }
 
@@ -596,19 +608,6 @@ async function startRemoteBot() {
     }
 
     await createOrLoadWhatsAppSession('primary_session', MY_PHONE_NUMBER);
-    
-    const sessionData = activeSessions.get('primary_session');
-    if (sessionData) {
-        setTimeout(async () => {
-            try {
-                const code = await sessionData.sock.requestPairingCode(MY_PHONE_NUMBER);
-                const formattedCode = code?.match(/.{1,4}/g)?.join('-') || code;
-                console.log(`\n🔑 Your 8-Digit WhatsApp Pairing Code for +${MY_PHONE_NUMBER}:\n\n   ${formattedCode}\n\nCheck your hosting console logs to copy this code and link it in WhatsApp under Linked Devices > Link with phone number instead!\n`);
-            } catch (err) {
-                console.log('⚠️ Error requesting pairing code (may already be paired):', err.message);
-            }
-        }, 5000);
-    }
 }
 
 startRemoteBot();
