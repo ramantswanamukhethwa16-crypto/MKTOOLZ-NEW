@@ -10,8 +10,7 @@
     "@whiskeysockets/baileys": "^6.7.0",
     "express": "^4.22.2",
     "qrcode-terminal": "^0.12.0",
-    "sharp": "^0.35.4",
-    "telegram": "^2.26.22"
+    "sharp": "^0.35.4"
   },
   "overrides": {
     "libsignal": "2.0.0",
