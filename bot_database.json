@@ -1,0 +1,162 @@
+{
+  "users": {
+    "120363427116440483": {
+      "number": "120363427116440483",
+      "queries": 0,
+      "banned": false,
+      "paired": false,
+      "createdAt": "2026-09-11T11:13:09.153Z",
+      "lastSeen": "2026-09-11T11:14:06.898Z",
+      "name": "User",
+      "lastActive": 1789134308647
+    },
+    "120363365225045973": {
+      "number": "120363365225045973",
+      "queries": 0,
+      "banned": false,
+      "paired": false,
+      "createdAt": "2026-09-11T11:13:09.634Z",
+      "lastSeen": "2026-09-11T11:18:00.643Z",
+      "name": "User",
+      "lastActive": 1789134285947
+    },
+    "120363408926606184": {
+      "number": "120363408926606184",
+      "queries": 0,
+      "banned": false,
+      "paired": false,
+      "createdAt": "2026-09-11T11:15:20.433Z",
+      "lastSeen": "2026-09-11T11:19:13.836Z",
+      "name": "User",
+      "lastActive": 1789133625845
+    },
+    "120363367554567469": {
+      "number": "120363367554567469",
+      "queries": 0,
+      "banned": false,
+      "paired": false,
+      "createdAt": "2026-09-11T11:19:21.994Z",
+      "lastSeen": "2026-09-11T11:19:21.995Z"
+    },
+    "27727098133": {
+      "name": "User",
+      "number": "27727098133",
+      "queriesCount": 0,
+      "lastActive": 1789135139471,
+      "banned": false
+    },
+    "249349074329802": {
+      "name": "S.V.G_FF",
+      "number": "249349074329802",
+      "queriesCount": 3,
+      "lastActive": 1789134480161,
+      "banned": false
+    },
+    "120363409460388049": {
+      "name": "我",
+      "number": "120363409460388049",
+      "queriesCount": 0,
+      "lastActive": 1789133391232,
+      "banned": false
+    },
+    "120363426085151101": {
+      "name": "User",
+      "number": "120363426085151101",
+      "queriesCount": 0,
+      "lastActive": 1789133614301,
+      "banned": false
+    },
+    "120363403445949753": {
+      "name": "User",
+      "number": "120363403445949753",
+      "queriesCount": 0,
+      "lastActive": 1789135337042,
+      "banned": false
+    },
+    "120363424097373485": {
+      "name": "User",
+      "number": "120363424097373485",
+      "queriesCount": 0,
+      "lastActive": 1789133390545,
+      "banned": false
+    },
+    "120363420212485691": {
+      "name": "User",
+      "number": "120363420212485691",
+      "queriesCount": 0,
+      "lastActive": 1789135395093,
+      "banned": false
+    },
+    "120363428236669363": {
+      "name": "User",
+      "number": "120363428236669363",
+      "queriesCount": 0,
+      "lastActive": 1789133965561,
+      "banned": false
+    },
+    "120363409747306485": {
+      "name": "User",
+      "number": "120363409747306485",
+      "queriesCount": 0,
+      "lastActive": 1789133852708,
+      "banned": false
+    },
+    "120363203859947207": {
+      "name": "User",
+      "number": "120363203859947207",
+      "queriesCount": 0,
+      "lastActive": 1789134170238,
+      "banned": false
+    },
+    "120363402073700629": {
+      "name": "User",
+      "number": "120363402073700629",
+      "queriesCount": 0,
+      "lastActive": 1789134737317,
+      "banned": false
+    },
+    "120363421454600041": {
+      "name": "User",
+      "number": "120363421454600041",
+      "queriesCount": 0,
+      "lastActive": 1789134619617,
+      "banned": false
+    },
+    "120363429557946980": {
+      "name": "-Tar Ba'Shoza🤝✝️🔥.",
+      "number": "120363429557946980",
+      "queriesCount": 0,
+      "lastActive": 1789135190443,
+      "banned": false
+    },
+    "120363428253126538": {
+      "name": "User",
+      "number": "120363428253126538",
+      "queriesCount": 0,
+      "lastActive": 1789134945461,
+      "banned": false
+    }
+  },
+  "history": [
+    {
+      "number": "249349074329802",
+      "name": "S.V.G_FF",
+      "timestamp": 1789134067649
+    },
+    {
+      "number": "249349074329802",
+      "name": "S.V.G_FF",
+      "timestamp": 1789134127193
+    },
+    {
+      "number": "249349074329802",
+      "name": "S.V.G_FF",
+      "timestamp": 1789134462675
+    }
+  ],
+  "pairedNumbers": [
+    "27727098133"
+  ],
+  "adminPassword": "CHANGE_ME",
+  "adEarnings": 0.015
+}
