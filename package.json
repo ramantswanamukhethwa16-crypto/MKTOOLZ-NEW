@@ -1,31 +1,15 @@
 {
   "name": "mktoolz-wd",
   "version": "1.0.0",
-  "description": "WhatsApp and Telegram config decryption bot",
+  "description": "WhatsApp bot configuration",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.0",
+    "@whiskeysockets/baileys": "6.7.0",
     "express": "^4.22.2",
     "qrcode-terminal": "^0.12.0",
     "sharp": "^0.35.4"
-  },
-  "overrides": {
-    "libsignal": "2.0.0",
-    "libsignal-node": "^2.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ramantswanamukhethwa16-crypto/MKTOOLZ-NEW.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/ramantswanamukhethwa16-crypto/MKTOOLZ-NEW/issues"
-  },
-  "homepage": "https://github.com/ramantswanamukhethwa16-crypto/MKTOOLZ-NEW#readme"
+  }
 }
