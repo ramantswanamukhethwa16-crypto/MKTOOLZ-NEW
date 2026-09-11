@@ -222,13 +222,11 @@ async function createOrLoadWhatsAppSession(sessionName, pairingNumber = null, is
                 }
             }
 
-            if (sessionData.pairedNumber && !sessionData.startupSent) {
+                        if (sessionData.pairedNumber && !sessionData.startupSent) {
                 sessionData.startupSent = true;
-                const targetJid = `${sessionData.pairedNumber}@s.whatsapp.net`;
-                try {
-                    const startupText = `🤖 *BOT CONNECTED SUCCESSFULLY!* 🤖\n\n✅ *THIS SESSION IS BOUND TO NUMBER:* +${sessionData.pairedNumber}\n🚀 *MKTOOLZ-WD IS ONLINE AND ACTIVE.* 🚀\n\n📢 *Join our WhatsApp Channel for updates:* ${WHATSAPP_CHANNEL_LINK}`;
-                    await sendMediaMessage(sock, targetJid, startupText, sessionData);
-                } catch (e) {}
+                console.log(`[${sessionName}]✅️ Bot connected successfully and bound to +${sessionData.pairedNumber}✅️`);
+            }
+ } catch (e) {}
             }
         }
     });
